@@ -1,0 +1,287 @@
+#include <iostream>
+#include <chrono>
+#include <cstdlib>
+#include <string>
+#include <math.h>
+#include <fstream>
+
+using namespace std;
+
+struct tree_element {
+    int info;
+    tree_element* left;
+    tree_element* right;
+};
+
+string cr, cl, cp;
+
+struct tree {
+private:
+
+    void _inorder(tree_element* elem) {
+        if (elem) {
+            _inorder(elem->left);
+            std::cout << elem->info << '-';
+            _inorder(elem->right);
+        }
+    }
+
+    void _preorder(tree_element* elem) {
+        if (elem) {
+            std::cout << elem->info << '-';
+            _preorder(elem->left);
+            _preorder(elem->right);
+        }
+    }
+
+    void _postorder(tree_element* elem) {
+        if (elem) {
+            _postorder(elem->left);
+            _postorder(elem->right);
+            std::cout << elem->info << '-';
+        }
+    }
+
+    void _usun(tree_element* elem) {
+        if (elem) {
+            _usun(elem->left);
+            _usun(elem->right);
+            cout << elem->info << '-';
+            delete elem;
+        }
+    }
+
+    void _print_tree(string sp, string sn, tree_element* v)
+    {
+        string s;
+        if (v)
+        {
+            s = sp;
+            if (sn == cr) s[s.length() - 2] = ' ';
+            _print_tree(s + cp, cr, v->right);
+
+            s = s.substr(0, sp.length() - 2);
+            cout << s << sn << v->info << endl;
+
+            s = sp;
+            if (sn == cl) s[s.length() - 2] = ' ';
+            _print_tree(s + cp, cl, v->left);
+        }
+    }
+
+    tree_element* _maxBST(tree_element* elem)
+    {
+        if (elem) {
+            while (elem->right) {
+                cout << elem->info << '-';
+                elem = elem->right;
+            }
+        }
+        return elem;
+    }
+
+    tree_element* _minBST(tree_element* elem)
+    {
+        if (elem) {
+            while (elem->left) {
+                cout << elem->info << '-';
+                elem = elem->left;
+            }
+            //cout << elem->info << '\n';
+        }
+        return elem;
+    }
+
+    tree_element* _usun_elem(tree_element* root, int key)
+    {
+        if (root == nullptr)
+            return root;
+        if (key < root->info) {
+            root->left = _usun_elem(root->left, key);
+            return root;
+        }
+        else if (key > root->info) {
+            root->right = _usun_elem(root->right, key);
+            return root;
+        }
+        else {
+            if (root->left == nullptr) {
+                tree_element* temp = root->right;
+                free(root);
+                return temp;
+            }
+            else if (root->right == nullptr) {
+                tree_element* temp = root->left;
+                free(root);
+                return temp;
+            }
+            else {
+                tree_element* succParent = root;
+                tree_element* succ = root->right;
+                while (succ->left != nullptr) {
+                    succParent = succ;
+                    succ = succ->left;
+                }
+                if (succParent != root)
+                    succParent->left = succ->right;
+                else
+                    succParent->right = succ->right;
+                root->info = succ->info;
+                free(succ);
+                return root;
+            }
+        }
+    }
+    int make_vine(tree_element* root, int cnt = 0) {
+        auto n = root->right;
+        while (n != nullptr) {
+            if (n->left != nullptr) {
+                auto old_n = n;
+                n = n->left;
+                old_n->left = n->right;
+                n->right = old_n;
+                root->right = n;
+            }
+            else {
+                ++cnt;
+                root = n;
+                n = n->right;
+            }
+        }
+        return cnt;
+    }
+    void compress(tree_element* root, int m) {
+        auto n = root->right;
+        while (m-- > 0) {
+            auto old_n = n;
+            n = n->right;
+            root->right = n;
+            old_n->right = n->left;
+            n->left = old_n;
+            root = n;
+            n = n->right;
+        }
+    }
+    tree_element* _balance(tree_element* root) {
+        tree_element grand;
+        grand.right = root;
+        auto cnt = make_vine(&grand);
+        int m = pow(2, int(log2(cnt + 1))) - 1;
+        compress(&grand, cnt - m);
+        for (m = m / 2; m > 0; m /= 2)
+            compress(&grand, m);
+        return grand.right;
+    }
+public:
+    tree_element* root = nullptr;
+    tree_element* insert(int wartosc) {
+        if (!root) { 
+            root = new tree_element{ wartosc, nullptr, nullptr };
+            return root;
+        }
+        else {
+            tree_element* temp = root;
+            while (temp != nullptr) { 
+                if (temp->info == wartosc) return nullptr; 
+                if (temp->info > wartosc) { 
+                    if (temp->left == nullptr) temp->left = new tree_element{ wartosc, nullptr, nullptr }; 
+                    else temp = temp->left; 
+                }
+                else if (temp->info < wartosc) { 
+                    if (temp->right == nullptr) temp->right = new tree_element{ wartosc, nullptr, nullptr };
+                    else temp = temp->right;
+                }
+            }
+            return temp;
+        }
+    }
+    tree_element* search(int wartosc) {
+        if (!root) return nullptr;
+        tree_element* temp = root;
+        while (temp) {
+            if (temp->info == wartosc) return temp;
+            if (temp->info > wartosc) temp = temp->left;
+            else temp = temp->right;
+        }
+        return temp;
+    }
+    void inorder() {
+        _inorder(root);
+        std::cout << '\n';
+    }
+    void postorder() {
+        _postorder(root);
+        std::cout << '\n';
+    }
+    void preorder() {
+        _preorder(root);
+        std::cout << '\n';
+    }
+    void usun() {
+        _usun(root);
+    }
+    void print_tree() {
+        _print_tree("", "", root);
+    }
+    void minBST() {
+        cout << _minBST(root)->info;
+    }
+    void maxBST() {
+        cout << _maxBST(root)->info;
+    }
+    void usun_elem(int key) {
+        _usun_elem(root, key);
+    }
+    void balance() {
+        root = _balance(root);
+    }
+};
+
+//t.inorder, t.preorder, t.postorder, t.insert, t.usun_elem, t.usun, t.print_tree, t.search, t.minBST, t.maxBST, t.balance
+
+int main() {
+    ofstream times;
+    int place = 0;
+    int tab[13] = { 10000, 30000, 50000, 70000, 90000, 110000, 130000, 150000, 170000, 190000, 210000, 230000, 250000 };
+    cr = cl = cp = "  ";
+    cr[0] = 218; cr[1] = 196;
+    cl[0] = 192; cl[1] = 196;
+    cp[0] = 179;
+    auto start = std::chrono::high_resolution_clock::now();
+    auto stop = std::chrono::high_resolution_clock::now();
+    for (int x = 12; x > -1; x--) {
+        tree t;
+        times.open("Czasy.txt", ios_base::app);
+        times << "Tablica długości: " << tab[x];
+        times.close();
+        start = std::chrono::high_resolution_clock::now();
+        for (int i = tab[x]; i > 0; i--) {
+            t.insert(i);
+            if ((i % 1000) == 0)
+                cout << '\n' << ++place << '\n';
+        }
+        stop = std::chrono::high_resolution_clock::now();
+        times.open("Czasy.txt", ios_base::app);
+        times << "\nTworzenie: " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << '\n';
+        times.close();
+        start = std::chrono::high_resolution_clock::now();
+        t.minBST();
+        stop = std::chrono::high_resolution_clock::now();
+        times.open("Czasy.txt", ios_base::app);
+        times << "\nWyszukanie MIN: " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << '\n';
+        times.close();
+        start = std::chrono::high_resolution_clock::now();
+        t.inorder();
+        stop = std::chrono::high_resolution_clock::now();
+        times.open("Czasy.txt", ios_base::app);
+        times << "\nWypiszanie inorder: " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << '\n';
+        times.close();
+        start = std::chrono::high_resolution_clock::now();
+        t.balance();
+        stop = std::chrono::high_resolution_clock::now();
+        times.open("Czasy.txt", ios_base::app);
+        times << "\nBalansowanie: " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << '\n';
+        times.close();
+        t.usun();
+    }
+}
